@@ -1,0 +1,6 @@
+pyairtable
+psycopg2-binary
+pandas
+sqlalchemy
+requests
+schedule

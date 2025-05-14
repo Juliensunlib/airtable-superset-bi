@@ -1,0 +1,52 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:6
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  superset:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SUPERSET_SECRET_KEY: 'votre_clé_secrète_ici'
+      SUPERSET_LOAD_EXAMPLES: 'no'
+      DATABASE_URL: postgresql+psycopg2://superset:superset@postgres:5432/superset
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./superset_config.py:/app/superset/superset_config.py
+      - ./etl:/app/etl
+    restart: unless-stopped
+    command: >
+      bash -c "superset db upgrade &&
+               superset fab create-admin
+               --username admin
+               --firstname Admin
+               --lastname User
+               --email admin@example.com
+               --password admin &&
+               superset init &&
+               superset run -p 8088 --with-threads --reload"
+
+volumes:
+  postgres_data:
+  redis_data:
